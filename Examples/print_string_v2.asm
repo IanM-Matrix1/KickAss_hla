@@ -29,7 +29,10 @@ text:
 
 
 
-// This macro provides automatic null-terminated strings
+.label temp_ptr = $fb       // temporary pointer location (unused in C64)
+.label CHROUT = $ffd2       // Kernal routine
+
+// This macro provides automatically null-terminated strings
 .macro ztext(val) {
     .text val
     .byte 0
@@ -45,16 +48,16 @@ text:
 
 print_string:
 {
-    sta $fb
-    stx $fc
+    sta temp_ptr            // Put the string ptr args into the temp_ptr
+    stx temp_ptr + 1
     ldy #0
 
-    do                  // Top of the loop
-        lda ($fb), y    // Get the next byte
-    while_ne            // While it's not zero, we'll stay in the loop
-        jsr $ffd2       // Pass the byte to CHROUT
-        iny             // Advance to the next byte
-    loop                // and repeat
+    do                      // Top of the loop
+        lda (temp_ptr), y   // Get the next byte
+    while_ne                // While it's not zero, we'll stay in the loop
+        jsr CHROUT          // Pass the byte to CHROUT
+        iny                 // Advance to the next byte
+    loop                    // and repeat
 
     rts
 }
