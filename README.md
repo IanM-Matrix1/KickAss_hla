@@ -66,9 +66,9 @@ The 'loop' statement marks the end of the loop and can be one of the following:
 'loop' on it's own will unconditionally jump back to the previous 'do', while the loop with a condition will branch back to the 'do' only if the condition is true.
 
 The 'do' will not result in any new instruction being inserted.
-The 'exit_loop' will insert a JMP instruction to just after the terminating 'loop' statement.
-The 'while' will insert a relative branch instruction to just after the terminating 'loop' statement.
-The unconditional 'loop' statement will insert a JMP unstruction to the location of the 'do' statement.
+The 'exit_loop' will insert a JMP instruction pointing to just after the terminating 'loop' statement.
+The 'while' will insert a relative branch instruction pointing to just after the terminating 'loop' statement.
+The unconditional 'loop' statement will insert a JMP instruction to the location of the 'do' statement.
 The conditional 'loop' statements will insert a relative branch back to the location of the 'do' statement.
 
 ## Examples
