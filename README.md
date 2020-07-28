@@ -116,3 +116,7 @@ It also doesn't seem to be possible to generate a label name dynamically.
 So the work-around is to back-patch on following structured instructions. For example, if an 'else' is encountered after an 'if', it is the responsibility of the 'else' to patch in the assembly code for the 'if' statement. The 'endif' is then responsible for patching in the assembly code for the 'else',, if there is one, or for the 'if' otherwise.
 
 One thing that I tried to do is to include an actual label in each of the routines anyway as a debugging aid. KickAss very kindly makes each of these labels unique by appending a numeric value and will provide these to the VICE monitor if you set KickASS options appropriately.
+
+## Credits
+
+Inspired by Garth Wilson - http://wilsonminesco.com
