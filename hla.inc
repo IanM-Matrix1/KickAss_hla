@@ -1,7 +1,15 @@
 #importonce
 .filenamespace hla
 
-// Structured code
+/*
+Supported defines:
+    HLA_ARITH_COMPARE
+        Enables unsigned comparison opcodes and the matching HLA structures.
+*/
+
+/////////////////////
+// Structured code //
+/////////////////////
 
 // Storage and types for the structured statement jump-points
 .var hla = List()
@@ -9,20 +17,27 @@
 
 
 // Information about opcodes for jumps/branches
-.struct opcodeInfo_s { size, opcode }
+.struct opcodeInfo_s { size }
 .var opcodeInfo = Hashtable()
 
-.eval opcodeInfo.put( "bcc", opcodeInfo_s( 2, BCC_REL ))
-.eval opcodeInfo.put( "bcs", opcodeInfo_s( 2, BCS_REL ))
-.eval opcodeInfo.put( "beq", opcodeInfo_s( 2, BEQ_REL ))
-.eval opcodeInfo.put( "bne", opcodeInfo_s( 2, BNE_REL ))
-.eval opcodeInfo.put( "bmi", opcodeInfo_s( 2, BMI_REL ))
-.eval opcodeInfo.put( "bpl", opcodeInfo_s( 2, BPL_REL ))
-.eval opcodeInfo.put( "bvc", opcodeInfo_s( 2, BVC_REL ))
-.eval opcodeInfo.put( "bvs", opcodeInfo_s( 2, BVS_REL ))
-.eval opcodeInfo.put( "jmp", opcodeInfo_s( 3, JMP_ABS ))
-.eval opcodeInfo.put( "jsr", opcodeInfo_s( 3, JSR_ABS ))
-// .eval opcodeInfo.put( "bra", opcodeInfo_s( 2, BRA_REL ))
+.eval opcodeInfo.put( "bcc", opcodeInfo_s( 2 ))
+.eval opcodeInfo.put( "bcs", opcodeInfo_s( 2 ))
+.eval opcodeInfo.put( "beq", opcodeInfo_s( 2 ))
+.eval opcodeInfo.put( "bne", opcodeInfo_s( 2 ))
+.eval opcodeInfo.put( "bmi", opcodeInfo_s( 2 ))
+.eval opcodeInfo.put( "bpl", opcodeInfo_s( 2 ))
+.eval opcodeInfo.put( "bvc", opcodeInfo_s( 2 ))
+.eval opcodeInfo.put( "bvs", opcodeInfo_s( 2 ))
+.eval opcodeInfo.put( "jmp", opcodeInfo_s( 3 ))
+.eval opcodeInfo.put( "jsr", opcodeInfo_s( 3 ))
+
+#if HLA_ARITH_COMPARE
+// Support the 4 additional arithmetic unsigned comparison branches
+.eval opcodeInfo.put( "blt", opcodeInfo_s( 2 ))
+.eval opcodeInfo.put( "bgt", opcodeInfo_s( 4 ))
+.eval opcodeInfo.put( "ble", opcodeInfo_s( 4 ))
+.eval opcodeInfo.put( "bge", opcodeInfo_s( 2 ))
+#endif
 
 
 // Helper to aid in constructing and pushing a new entry onto the hla stack
@@ -91,7 +106,14 @@
     .if (jump == "bvs")   bvs target
     .if (jump == "jmp")   jmp target
     .if (jump == "jsr")   jsr target
-    // .if (type == "bra")   bra target
+
+#if HLA_ARITH_COMPARE
+    // Support the 4 additional arithmetic unsigned comparison branches
+    .if (jump == "blt")   blt target
+    .if (jump == "bgt")   bgt target
+    .if (jump == "ble")   ble target
+    .if (jump == "bge")   bge target
+#endif
 
     // Validate that the jump statement was handled as the pc will have advanced from
     // the saved position.
@@ -190,6 +212,29 @@ _if_v_set:
 _if_v_clr:
     add_patch_point("bvs", "if")
 }
+
+#if HLA_ARITH_COMPARE
+// Support the 4 additional arithmetic unsigned comparison branches
+.pseudocommand @if_lt {
+_if_lt:
+    add_patch_point("bge", "if")
+}
+
+.pseudocommand @if_gt {
+_if_gt:
+    add_patch_point("ble", "if")
+}
+
+.pseudocommand @if_le {
+_if_le:
+    add_patch_point("bgt", "if")
+}
+
+.pseudocommand @if_ge {
+_if_ge:
+    add_patch_point("blt", "if")
+}
+#endif
 
 .pseudocommand @else {
     .var stack = List()
@@ -301,6 +346,29 @@ _while_v_clr:
     add_patch_point("bvs", "loop")
 }
 
+#if HLA_ARITH_COMPARE
+// Support the 4 additional arithmetic comparison branches
+.pseudocommand @while_lt {
+_while_lt:
+    add_patch_point("blt", "loop")
+}
+
+.pseudocommand @while_gt {
+_while_gt:
+    add_patch_point("bgt", "loop")
+}
+
+.pseudocommand @while_le {
+_while_le:
+    add_patch_point("ble", "loop")
+}
+
+.pseudocommand @while_ge {
+_while_ge:
+    add_patch_point("bge", "loop")
+}
+#endif
+
 // Helper macro to provide all the machinery to link back to the top
 // of the loop, and to patch all of the while/exit loop statements
 // to after the loop.
@@ -376,3 +444,54 @@ _loop_if_v_set:
     loop_helper("bvc")
 _loop_if_v_clr:
 }
+
+#if HLA_ARITH_COMPARE
+// Support the 4 additional arithmetic unsigned comparison branches
+.pseudocommand @loop_if_lt {
+    loop_helper("blt")
+_loop_if_lt:
+}
+
+.pseudocommand @loop_if_gt {
+    loop_helper("bgt")
+_loop_if_gt:
+}
+
+.pseudocommand @loop_if_le {
+    loop_helper("ble")
+_loop_if_le:
+}
+
+.pseudocommand @loop_if_ge {
+    loop_helper("bge")
+_loop_if_ge:
+}
+#endif
+
+
+////////////////////////
+// New pseudo opcodes //
+////////////////////////
+
+#if HLA_ARITH_COMPARE
+// The 4 additional arithmetic unsigned comparison branches
+// NOTE: Broken my own rules here - some of these branches are 2 instructions.
+.pseudocommand @blt target {
+    bmi target
+}
+
+.pseudocommand @bgt target {
+    beq !+
+    bpl target
+!:
+}
+
+.pseudocommand @ble target {
+    bmi target
+    beq target
+}
+
+.pseudocommand @bge target {
+    bpl target
+}
+#endif

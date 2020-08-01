@@ -7,21 +7,27 @@ The commands provided do some simple checks to ensure that proper structure is m
 
 In addition, I made the choice to ensure that only a single instruction may be inserted into the instruction stream by any one of the keywords provided. I didn't want to add any hidden bloat to the code.
 
+(I have already broken this decision with the inclusion of the HLA_ARITH_COMPARE instructions - two of the comparisons require that 2 branch instructions are included.)
+
 ## Structures current available
 
 ### if ... [else] ... endif
 
 The opening 'if' statement can be one of the following:
-- if_eq
-- if_zero
-- if_ne
-- if_not_zero
+- if_eq / if_zero
+- if_ne / if_not_zero
 - if_plus
 - if_minus
 - if_c_set
 - if_c_clr
 - if_v_set
 - if_v_clr
+
+If you define HLA_ARITH_COMPARE, the following 4 statements are included:
+- if_lt     Less than - equivalent to if_minus
+- if_gt     Greater than - equivalent to if_plus + if_ne
+- if_le     Less than or equal - equivalent to if_minus + if_eq
+- if_ge     Greater than or equal - equivalent to if_plus
 
 The 'else' part of the structure is optional.
 The 'endif' must be present.
@@ -50,6 +56,12 @@ The 'while' statement will cause the loop to terminate immediately if the condit
 - while_v_set
 - while_v_clr
 
+If you define HLA_ARITH_COMPARE, the following 4 statements are included:
+- while_lt     (less than)
+- while_gt     (greater than)
+- while_le     (less than or equal)
+- while_ge     (greater than or equal)
+
 The 'loop' statement marks the end of the loop and can be one of the following:
 - loop
 - loop_if_eq
@@ -62,6 +74,12 @@ The 'loop' statement marks the end of the loop and can be one of the following:
 - loop_if_c_clr
 - loop_if_v_set
 - loop_if_v_clr
+
+If you define HLA_ARITH_COMPARE, the following 4 statements are included:
+- loop_if_lt     (less than)
+- loop_if_gt     (greater than)
+- loop_if_le     (less than or equal)
+- loop_if_ge     (greater than or equal)
 
 'loop' on it's own will unconditionally jump back to the previous 'do', while the loop with a condition will branch back to the 'do' only if the condition is true.
 
@@ -100,6 +118,16 @@ On the C64, this code will loop until raster line 255 ($ff) is reached. Note tha
         cmp $d012
     loop_if_ne
     ...
+
+## New pseudo-opcodes included
+
+When HLA_ARITH_COMPARE is defined, the following 4 new branch opscodes are also included:
+- blt - branch if less than
+- bgt - branch if greater than
+- ble - branch if less than or equal
+- bge - branch if greater than or equal
+
+The bgt amd ble opcodes are 4 bytes in size rather than the usual 2 bytes of a branch because they consist of 2 branch instructions internally.
 
 ## Implementation notes
 
