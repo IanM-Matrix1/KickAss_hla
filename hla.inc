@@ -13,7 +13,7 @@ Supported defines:
 
 // Storage and types for the structured statement jump-points
 .var hla = List()
-.struct jumpPoint_s { type, jump, addr }
+.struct jumpPoint_s { type, subtype, jump, addr }
 
 
 // Information about opcodes for jumps/branches
@@ -41,8 +41,8 @@ Supported defines:
 
 
 // Helper to aid in constructing and pushing a new entry onto the hla stack
-.macro push_hla( type, jump, addr ) {
-    .eval hla.add( jumpPoint_s(type, jump, addr) )
+.macro push_hla( type, subtype, jump, addr ) {
+    .eval hla.add( jumpPoint_s(type, subtype, jump, addr) )
 }
 
 
@@ -68,15 +68,15 @@ Supported defines:
 
 // Pull from the names stack, until the named type is found.
 // Returns a stack of all popped items in reverse order.
-.function search(inStk, type) {
+.function search_type(inStk, type, subtype) {
     .var stack = List();
 
     // Pull from the HLA stack until we get the type req'd - save everything we get
     .var top = pop(inStk)
-    .while (top.type != type) {
+    .while (top.type != type || top.subtype != subtype) {
         .eval stack.add(top)
 
-        .errorif (inStk.size() == 0), "Unable to find " + type
+        .errorif (inStk.size() == 0), "Unable to find " + type + "/" + subtype
         
         .eval top = pop(inStk)
     }
@@ -139,21 +139,21 @@ Supported defines:
     * = * + gap
 }
 
-.macro add_patch_point(jump, type) {
+.macro @add_patch_point(jump, type, subtype) {
     .errorif !opcodeInfo.containsKey(jump), "Unsupported/unknown opcode: " + jump
 
-    push_hla( type, jump, * )
+    push_hla( type, subtype, jump, * )
     .var info = opcodeInfo.get(jump)
     reserve_pc( info.size )
 }
 
 .macro @verify_structure() {
     .if (hla.size() > 0) {
+        .error "There's something left over on the HLA stack:"
         .var last = hla.size()-1
         .for (var i = 0; i < last; i++) {
-            .print hla.get(i).type
+            .print "- " + hla.get(i).type + "/" + hla.get(i).subtype
         }
-        .error "There's something left over on the HLA stack"
     }
 }
 
@@ -165,119 +165,122 @@ Supported defines:
 // ======================
 .pseudocommand @if_eq {
 _if_eq:
-    add_patch_point("bne", "if")
+    add_patch_point("bne", "if", "if")
 }
 
 .pseudocommand @if_zero {
 _if_zero:
-    add_patch_point("bne", "if")
+    add_patch_point("bne", "if", "if")
 }
 
 .pseudocommand @if_ne {
 _if_ne:
-    add_patch_point("beq", "if")
+    add_patch_point("beq", "if", "if")
 }
 
 .pseudocommand @if_not_zero {
 _if_not_zero:
-    add_patch_point("beq", "if")
+    add_patch_point("beq", "if", "if")
 }
 
 .pseudocommand @if_plus {
 _if_plus:
-    add_patch_point("bmi", "if")
+    add_patch_point("bmi", "if", "if")
 }
 
 .pseudocommand @if_minus {
 _if_minus:
-    add_patch_point("bpl", "if")
+    add_patch_point("bpl", "if", "if")
 }
 
 .pseudocommand @if_c_set {
 _if_c_set:
-    add_patch_point("bcc", "if")
+    add_patch_point("bcc", "if", "if")
 }
 
 .pseudocommand @if_c_clr {
 _if_c_clr:
-    add_patch_point("bcs", "if")
+    add_patch_point("bcs", "if", "if")
 }
 
 .pseudocommand @if_v_set {
 _if_v_set:
-    add_patch_point("bvc", "if")
+    add_patch_point("bvc", "if", "if")
 }
 
 .pseudocommand @if_v_clr {
 _if_v_clr:
-    add_patch_point("bvs", "if")
+    add_patch_point("bvs", "if", "if")
 }
 
 #if HLA_ARITH_COMPARE
 // Support the 4 additional arithmetic unsigned comparison branches
 .pseudocommand @if_lt {
 _if_lt:
-    add_patch_point("bge", "if")
+    add_patch_point("bge", "if", "if")
 }
 
 .pseudocommand @if_gt {
 _if_gt:
-    add_patch_point("ble", "if")
+    add_patch_point("ble", "if", "if")
 }
 
 .pseudocommand @if_le {
 _if_le:
-    add_patch_point("bgt", "if")
+    add_patch_point("bgt", "if", "if")
 }
 
 .pseudocommand @if_ge {
 _if_ge:
-    add_patch_point("blt", "if")
+    add_patch_point("blt", "if", "if")
 }
 #endif
 
 .pseudocommand @else {
-    .var stack = List()
-
-    .var top = pop(hla)
-    .while (top.type == "loop") {
-        .eval stack.add(top)
-        .eval top = pop(hla)
-    }
-
-    // Can't allow an additional else, or an else in a loop when the if is outside
-    .errorif top.type != "if", "Expected match of if, but got " + top.type
-
-    .while (stack.size() > 0) {
-        .eval hla.add( pop(stack) )
-    }
+    .var stack = search_type(hla, "if", "if")
 
     // Need a place for the endif to place a jmp for the end of the 'if'
-    add_patch_point("jmp", "else")
+    add_patch_point("jmp", "if", "else")
 
 _else:
-    // Update the previous if to jump to this point
-    place_jump_stmt(top.get("addr"), top.get("jump"), *)
+    .while (stack.size() > 0) {
+        .var top = pop(stack)
+        .if (top.type == "if") {
+            .errorif top.subtype == "else", "Cannot have multiple else statements for a single if"
+            .if (top.subtype == "if" || top.subtype == "test") {
+                place_jump_stmt(top.get("addr"), top.get("jump"), *)
+            } else {
+                .error "Unknown statement subtype: " + top.subtype
+            }
+        } else {    // Don't deal with this here
+            .eval hla.add(top)
+        }
+    }
 }
 
 .pseudocommand @endif {
     .var stack = List()
 
     .var top = pop(hla)
-    .while (top.type == "loop") {
+    .while (top.type != "if" || (top.subtype != "if" && top.subtype != "else")) {
         .eval stack.add(top)
         .eval top = pop(hla)
     }
-
-    .errorif top.type != "if" && top.type != "else", "Expected match of if/else, but got " + top.type
-
-    .while (stack.size() > 0) {
-        .eval hla.add( pop(stack) )
-    }
+    .eval stack.add(top)
 
 _endif:
-    // Update the previous else/if to jump to this point
-    place_jump_stmt(top.get("addr"), top.get("jump"), *)
+    .while (stack.size() > 0) {
+        .eval top = pop(stack)
+        .if (top.type == "if") {
+            .if (top.subtype == "if" || top.subtype == "test" || top.subtype == "else") {
+                place_jump_stmt(top.get("addr"), top.get("jump"), *)
+            } else {
+                .error "Unknown statement subtype: " + top.subtype
+            }
+        } else {    // Don't deal with this here
+            .eval hla.add(top)
+        }
+    }
 }
 
 
@@ -286,86 +289,86 @@ _endif:
 // =====================================
 .pseudocommand @do {
 _do:
-    push_hla( "do", "", *)
+    push_hla( "loop", "do", "", *)
     // DO doesn't have a jump command. The entry is just used to record a target for another
     // jump from somewhere else, ie from the tail end of the loop.
 }
 
 .pseudocommand @exit_loop {
 _exit_loop:
-    add_patch_point("jmp", "loop")
+    add_patch_point("jmp", "loop", "test")
 }
 
 .pseudocommand @while_eq {
 _while_eq:
-    add_patch_point("bne", "loop")
+    add_patch_point("bne", "loop", "test")
 }
 
 .pseudocommand @while_zero {
 _while_zero:
-    add_patch_point("bne", "loop")
+    add_patch_point("bne", "loop", "test")
 }
 
 .pseudocommand @while_ne {
 _while_ne:
-    add_patch_point("beq", "loop")
+    add_patch_point("beq", "loop", "test")
 }
 
 .pseudocommand @while_not_zero {
 _while_not_zero:
-    add_patch_point("beq", "loop")
+    add_patch_point("beq", "loop", "test")
 }
 
 .pseudocommand @while_plus {
 _while_plus:
-    add_patch_point("bmi", "loop")
+    add_patch_point("bmi", "loop", "test")
 }
 
 .pseudocommand @while_minus {
 _while_minus:
-    add_patch_point("bpl", "loop")
+    add_patch_point("bpl", "loop", "test")
 }
 
 .pseudocommand @while_c_set {
 _while_c_set:
-    add_patch_point("bcc", "loop")
+    add_patch_point("bcc", "loop", "test")
 }
 
 .pseudocommand @while_c_clr {
 _while_c_clr:
-    add_patch_point("bcs", "loop")
+    add_patch_point("bcs", "loop", "test")
 }
 
 .pseudocommand @while_v_set {
 _while_v_set:
-    add_patch_point("bvc", "loop")
+    add_patch_point("bvc", "loop", "test")
 }
 
 .pseudocommand @while_v_clr {
 _while_v_clr:
-    add_patch_point("bvs", "loop")
+    add_patch_point("bvs", "loop", "test")
 }
 
 #if HLA_ARITH_COMPARE
 // Support the 4 additional arithmetic comparison branches
 .pseudocommand @while_lt {
 _while_lt:
-    add_patch_point("blt", "loop")
+    add_patch_point("blt", "loop", "test")
 }
 
 .pseudocommand @while_gt {
 _while_gt:
-    add_patch_point("bgt", "loop")
+    add_patch_point("bgt", "loop", "test")
 }
 
 .pseudocommand @while_le {
 _while_le:
-    add_patch_point("ble", "loop")
+    add_patch_point("ble", "loop", "test")
 }
 
 .pseudocommand @while_ge {
 _while_ge:
-    add_patch_point("bge", "loop")
+    add_patch_point("bge", "loop", "test")
 }
 #endif
 
@@ -373,7 +376,7 @@ _while_ge:
 // of the loop, and to patch all of the while/exit loop statements
 // to after the loop.
 .macro loop_helper(jump) {
-    .var stack = search(hla, "do")
+    .var stack = search_type(hla, "loop", "do")
     .var top = pop(stack)
 
     // This is the end of the loop, so jump back to the 'DO' location.
@@ -382,11 +385,15 @@ _while_ge:
     // Now deal with everything else we got from the stack
     .while (stack.size() > 0) {
         .eval top = pop(stack)
-        .errorif (top.type == "else" || top.type == "if"), top.type + " without endif"
-        .errorif (top.type != "loop"), "Internal error - I got " + top.type
 
-        // Can deal with it, so do so, by placing a jump to the current pc
-        place_jump_stmt(top.get("addr"), top.get("jump"), *)
+        .if (top.type == "loop") {
+            // Can deal with it, so do so, by placing a jump to the current pc
+            place_jump_stmt(top.get("addr"), top.get("jump"), *)
+        } else {
+            .errorif (top.type == "else"), "else without endif"
+            .errorif (top.type == "if"),   "if without endif"
+            .errorif (top.type != "loop"), "Internal error - I got " + top.subtype
+        }
     }
 }
 
