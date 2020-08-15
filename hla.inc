@@ -484,21 +484,21 @@ _loop_if_ge:
 // The 4 additional arithmetic unsigned comparison branches
 // NOTE: Broken my own rules here - some of these branches are 2 instructions.
 .pseudocommand @blt target {
-    bmi target
+    bcc target
 }
 
 .pseudocommand @bgt target {
     beq !+
-    bpl target
+    bcs target
 !:
 }
 
 .pseudocommand @ble target {
-    bmi target
+    bcc target
     beq target
 }
 
 .pseudocommand @bge target {
-    bpl target
+    bcs target
 }
 #endif
