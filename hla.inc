@@ -353,22 +353,22 @@ _while_v_clr:
 // Support the 4 additional arithmetic comparison branches
 .pseudocommand @while_lt {
 _while_lt:
-    add_patch_point("blt", "loop", "test")
+    add_patch_point("bge", "loop", "test")
 }
 
 .pseudocommand @while_gt {
 _while_gt:
-    add_patch_point("bgt", "loop", "test")
+    add_patch_point("ble", "loop", "test")
 }
 
 .pseudocommand @while_le {
 _while_le:
-    add_patch_point("ble", "loop", "test")
+    add_patch_point("bgt", "loop", "test")
 }
 
 .pseudocommand @while_ge {
 _while_ge:
-    add_patch_point("bge", "loop", "test")
+    add_patch_point("blt", "loop", "test")
 }
 #endif
 
