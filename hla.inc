@@ -375,7 +375,7 @@ _while_ge:
 // Helper macro to provide all the machinery to link back to the top
 // of the loop, and to patch all of the while/exit loop statements
 // to after the loop.
-.macro loop_helper(jump) {
+.macro @terminate_loop(jump) {
     .var stack = search_type(hla, "loop", "do")
     .var top = pop(stack)
 
@@ -398,79 +398,79 @@ _while_ge:
 }
 
 .pseudocommand @loop {
-    loop_helper("jmp")
+    terminate_loop("jmp")
 _loop:
 }
 
 .pseudocommand @loop_if_eq {
-    loop_helper("beq")
+    terminate_loop("beq")
 _loop_if_eq:
 }
 
 .pseudocommand @loop_if_zero {
-    loop_helper("beq")
+    terminate_loop("beq")
 _loop_if_zero:
 }
 
 .pseudocommand @loop_if_ne {
-    loop_helper("bne")
+    terminate_loop("bne")
 _loop_if_ne:
 }
 
 .pseudocommand @loop_if_not_zero {
-    loop_helper("bne")
+    terminate_loop("bne")
 _loop_if_not_zero:
 }
 
 .pseudocommand @loop_if_plus {
-    loop_helper("bpl")
+    terminate_loop("bpl")
 _loop_if_plus:
 }
 
 .pseudocommand @loop_if_minus {
-    loop_helper("bmi")
+    terminate_loop("bmi")
 _loop_if_minus:
 }
 
 .pseudocommand @loop_if_c_set {
-    loop_helper("bcs")
+    terminate_loop("bcs")
 _loop_if_c_set:
 }
 
 .pseudocommand @loop_if_c_clr {
-    loop_helper("bcc")
+    terminate_loop("bcc")
 _loop_if_c_clr:
 }
 
 .pseudocommand @loop_if_v_set {
-    loop_helper("bvs")
+    terminate_loop("bvs")
 _loop_if_v_set:
 }
 
 .pseudocommand @loop_if_v_clr {
-    loop_helper("bvc")
+    terminate_loop("bvc")
 _loop_if_v_clr:
 }
 
 #if HLA_ARITH_COMPARE
 // Support the 4 additional arithmetic unsigned comparison branches
 .pseudocommand @loop_if_lt {
-    loop_helper("blt")
+    terminate_loop("blt")
 _loop_if_lt:
 }
 
 .pseudocommand @loop_if_gt {
-    loop_helper("bgt")
+    terminate_loop("bgt")
 _loop_if_gt:
 }
 
 .pseudocommand @loop_if_le {
-    loop_helper("ble")
+    terminate_loop("ble")
 _loop_if_le:
 }
 
 .pseudocommand @loop_if_ge {
-    loop_helper("bge")
+    terminate_loop("bge")
 _loop_if_ge:
 }
 #endif
