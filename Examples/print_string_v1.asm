@@ -1,5 +1,5 @@
 /*
-    Example: print_string.asm
+    Example: print_string_v1.asm
 
     Shows off two routines that have exaxtly the same functionality (just
     printing a string to the screen using the CHROUT Kernal routine), but with
