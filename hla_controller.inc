@@ -108,7 +108,7 @@
     .return keyboard.get(keyName)
 }
 
-.macro create_keyMatrix() {
+.macro @create_keyMatrix() {
     .fill 8, $ff
 }
 
