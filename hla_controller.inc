@@ -110,10 +110,12 @@
 
 .macro @create_keyMatrix() {
     .fill 8, $ff
+end:
 }
 
 .macro @update_keyboard_matrix(keyMatrix) {
-    // TODO: Validate that keyMatrix is large enough
+    .var listSize = keyMatrix.end - keyMatrix
+    .errorif listSize != 8, "keyMatrix must be 8 bytes in size"
 
     ldy #7
     lda #%01111111              // Initial row mask
