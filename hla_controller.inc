@@ -229,10 +229,12 @@ end:
 }
 
 .macro @update_joystick1_state(joyState) {
+_update_joystick1_state:
     update_joystick_state_from_port(joyState, $dc01)
 }
 
 .macro @update_joystick2_state(joyState) {
+_update_joystick2_state:
     update_joystick_state_from_port(joyState, $dc00)
 }
 
@@ -267,13 +269,13 @@ _if_key_not_released:
 }
 
 .macro @if_key_down(keyState) {
-_if_key_up:
+_if_key_down:
     bit keyState
     add_patch_point("bmi", "if", "if")
 }
 
 .macro @if_key_up(keyState) {
-_if_key_down:
+_if_key_up:
     bit keyState
     add_patch_point("bpl", "if", "if")
 }
@@ -289,20 +291,24 @@ _while_key_not_pressed:
 
 .macro @loop_if_key_not_pressed(keyState)
 {
+_loop_if_key_not_pressed:
     bit keyState
     bmi !+
-    bvs _loop_if_key_not_pressed
+    terminate_loop("bvc")
+    //bvs _loop_if_key_not_pressed_end
 !:
-    terminate_loop("jmp")
-_loop_if_key_not_pressed:
+    //terminate_loop("jmp")
+//_loop_if_key_not_pressed_end:
 }
 
 .macro @loop_if_key_up(keyState) {
+_loop_if_key_up:
     bit keyState
     terminate_loop("bmi")
 }
 
 .macro @loop_if_key_down(keyState) {
+_loop_if_key_down:
     bit keyState
     terminate_loop("bpl")
 }
