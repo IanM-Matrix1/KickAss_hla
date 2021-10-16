@@ -295,10 +295,7 @@ _loop_if_key_not_pressed:
     bit keyState
     bmi !+
     terminate_loop("bvc")
-    //bvs _loop_if_key_not_pressed_end
 !:
-    //terminate_loop("jmp")
-//_loop_if_key_not_pressed_end:
 }
 
 .macro @loop_if_key_up(keyState) {
