@@ -20,24 +20,16 @@ Supported defines:
 .struct opcodeInfo_s { size }
 .var opcodeInfo = Hashtable()
 
-.eval opcodeInfo.put( "bcc", opcodeInfo_s( 2 ))
-.eval opcodeInfo.put( "bcs", opcodeInfo_s( 2 ))
-.eval opcodeInfo.put( "beq", opcodeInfo_s( 2 ))
-.eval opcodeInfo.put( "bne", opcodeInfo_s( 2 ))
-.eval opcodeInfo.put( "bmi", opcodeInfo_s( 2 ))
-.eval opcodeInfo.put( "bpl", opcodeInfo_s( 2 ))
-.eval opcodeInfo.put( "bvc", opcodeInfo_s( 2 ))
-.eval opcodeInfo.put( "bvs", opcodeInfo_s( 2 ))
-.eval opcodeInfo.put( "jmp", opcodeInfo_s( 3 ))
-.eval opcodeInfo.put( "jsr", opcodeInfo_s( 3 ))
-
-#if HLA_ARITH_COMPARE
-// Support the 4 additional arithmetic unsigned comparison branches
-.eval opcodeInfo.put( "blt", opcodeInfo_s( 2 ))
-.eval opcodeInfo.put( "bgt", opcodeInfo_s( 4 ))
-.eval opcodeInfo.put( "ble", opcodeInfo_s( 4 ))
-.eval opcodeInfo.put( "bge", opcodeInfo_s( 2 ))
-#endif
+.eval opcodeInfo.put( "bcc", opcodeInfo_s( asmCommandSize(BCC_REL) ))
+.eval opcodeInfo.put( "bcs", opcodeInfo_s( asmCommandSize(BCS_REL) ))
+.eval opcodeInfo.put( "beq", opcodeInfo_s( asmCommandSize(BEQ_REL) ))
+.eval opcodeInfo.put( "bne", opcodeInfo_s( asmCommandSize(BNE_REL) ))
+.eval opcodeInfo.put( "bmi", opcodeInfo_s( asmCommandSize(BMI_REL) ))
+.eval opcodeInfo.put( "bpl", opcodeInfo_s( asmCommandSize(BPL_REL) ))
+.eval opcodeInfo.put( "bvc", opcodeInfo_s( asmCommandSize(BVC_REL) ))
+.eval opcodeInfo.put( "bvs", opcodeInfo_s( asmCommandSize(BVS_REL) ))
+.eval opcodeInfo.put( "jmp", opcodeInfo_s( asmCommandSize(JMP_ABS) ))
+.eval opcodeInfo.put( "jsr", opcodeInfo_s( asmCommandSize(JSR_ABS) ))
 
 
 // Helper to aid in constructing and pushing a new entry onto the hla stack
@@ -483,6 +475,12 @@ _loop_if_ge:
 #if HLA_ARITH_COMPARE
 // The 4 additional arithmetic unsigned comparison branches
 // NOTE: Broken my own rules here - some of these branches are 2 instructions.
+
+.eval opcodeInfo.put( "blt", opcodeInfo_s( asmCommandSize(BCC_REL) ))
+.eval opcodeInfo.put( "bgt", opcodeInfo_s( asmCommandSize(BEQ_REL) + asmCommandSize(BCS_REL) ))
+.eval opcodeInfo.put( "ble", opcodeInfo_s( asmCommandSize(BEQ_REL) + asmCommandSize(BCC_REL) ))
+.eval opcodeInfo.put( "bge", opcodeInfo_s( asmCommandSize(BCS_REL) ))
+
 .pseudocommand @blt target {
     bcc target
 }
